@@ -21,3 +21,5 @@ var/
 gitversion
 .DS_Store
 .vscode/
+
+Fix.md

@@ -16,7 +16,6 @@
 
 import os
 import traceback
-import logging
 from flask import Flask, request
 from flask_babel import Babel, gettext
 from rrd import config
@@ -25,38 +24,6 @@ from rrd import config
 app = Flask(__name__)
 app.config.from_object("rrd.config")
 babel = Babel(app)
-
-import time
-from flask import request, g
-
-@app.before_request
-def before_request():
-    g.request_start_time = time.time()
-    g.request_id = id(request)
-    
-    logging.warning(
-        "[HTTP_START] request_id=%s method=%s path=%s remote_addr=%s",
-        g.request_id, request.method, request.path, request.remote_addr
-    )
-
-@app.after_request
-def after_request(response):
-    if hasattr(g, 'request_start_time'):
-        elapsed = time.time() - g.request_start_time
-        
-        logging.warning(
-            "[HTTP_END] request_id=%s method=%s path=%s status=%s elapsed=%.3fs",
-            g.request_id, request.method, request.path, response.status_code, elapsed
-        )
-        
-        # 如果响应慢，记录警告
-        if elapsed > 5.0:
-            logging.error(
-                "[HTTP_SLOW] request_id=%s method=%s path=%s elapsed=%.3fs",
-                g.request_id, request.method, request.path, elapsed
-            )
-    
-    return response
 
 if not config.DEBUG:
     @app.errorhandler(Exception)
