@@ -20,7 +20,7 @@ activate_this = '%s/env/bin/activate_this.py' % base_dir
 try:
     execfile(activate_this, dict(__file__=activate_this))
 except:
-    print "running without local python env"
+    print("running without local python env")
 
 import sys
 sys.path.insert(0, base_dir)

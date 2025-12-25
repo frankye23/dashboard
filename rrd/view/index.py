@@ -39,7 +39,7 @@ def get_api_endpoints(q, tags, page=1, limit=100):
 def index():
     q = request.args.get("q") or "."
     raw_tag = request.args.get("tags") or ""
-    tags = ','.join(re.split('\s*,\s*', raw_tag))
+    tags = ','.join(re.split(r'\s*,\s*', raw_tag))
     limit = int(request.args.get("limit") or 50)
     page = int(request.args.get("page") or 1)
 
@@ -56,7 +56,7 @@ def api_endpoints():
 
     q = request.args.get("q") or "."
     raw_tag = request.args.get("tags") or ""
-    tags = ','.join(re.split('\s*,\s*', raw_tag))
+    tags = ','.join(re.split(r'\s*,\s*', raw_tag))
     limit = int(request.args.get("limit") or 100)
     page = int(request.args.get("page") or 1)
 

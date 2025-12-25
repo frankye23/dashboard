@@ -76,4 +76,4 @@ DEBUG = True
 try:
     from rrd.local_config import *
 except:
-    print "[warning] no local config file"
+    print("[warning] no local config file")

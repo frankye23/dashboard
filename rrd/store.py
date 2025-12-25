@@ -45,7 +45,7 @@ def connect_db(cfg):
             use_unicode=True,
             charset="utf8")
         return conn
-    except Exception, e:
+    except Exception as e:
         logging.getLogger().critical('connect db: %s' % e)
         return None
 

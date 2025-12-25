@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# PyMySQL 兼容层 - 必须在所有导入之前
+import pymysql
+pymysql.install_as_MySQLdb()
 
 import os
 import traceback
@@ -74,9 +77,9 @@ def get_locale():
 def get_timezone():
     return app.config.get("BABEL_DEFAULT_TIMEZONE")
 
-from view import index
-from view.auth import auth
-from view.user import user
-from view.team import team
-from view.dashboard import chart, screen
-from view.portal import *
+from .view import index
+from .view.auth import auth
+from .view.user import user
+from .view.team import team
+from .view.dashboard import chart, screen
+from .view.portal import *
