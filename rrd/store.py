@@ -93,16 +93,7 @@ class DB(object):
             self.conn = None
             cursor = self.get_conn().cursor()
             cursor.execute(*a, **kw)
-            
-        except Exception as e:
-            # 【止血修复】记录所有 DB 异常，确保不丢失诊断信息
-            elapsed = time.time() - start_time
-            logging.error(
-                "[DB_ERROR] thread=%s sql=%s elapsed=%.3fs error=%s",
-                thread_id, sql_preview, elapsed, str(e)
-            )
-            raise
-            
+        
         return cursor
 
     # insert one record in a transaction
