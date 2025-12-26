@@ -82,6 +82,10 @@ def auth_requests(method, *args, **kwargs):
     # 执行请求
     response = None
     try:
+        # 【止血修复】确保所有请求都有超时限制，避免线程无限阻塞
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = 10  # 10秒超时
+        
         if method == "POST":
             response = requests.post(*args, headers=headers, **kwargs)
         elif method == "GET":
@@ -111,24 +115,24 @@ def auth_requests(method, *args, **kwargs):
     except requests.exceptions.Timeout as e:
         elapsed = time.time() - start_time
         logging.error(
-            "[REQ_TIMEOUT] id=%d method=%s url=%s elapsed=%.3fs caller=%s error=%s",
-            request_id, method, url, elapsed, caller, str(e)
+            "[REQ_TIMEOUT] id=%d method=%s url=%s elapsed=%.3fs caller=%s thread=%s error=%s",
+            request_id, method, url, elapsed, caller, threading.current_thread().name, str(e)
         )
         raise
 
     except requests.exceptions.ConnectionError as e:
         elapsed = time.time() - start_time
         logging.error(
-            "[REQ_CONN_ERROR] id=%d method=%s url=%s elapsed=%.3fs caller=%s error=%s",
-            request_id, method, url, elapsed, caller, str(e)
+            "[REQ_CONN_ERROR] id=%d method=%s url=%s elapsed=%.3fs caller=%s thread=%s error=%s",
+            request_id, method, url, elapsed, caller, threading.current_thread().name, str(e)
         )
         raise
 
     except Exception as e:
         elapsed = time.time() - start_time
         logging.error(
-            "[REQ_EXCEPTION] id=%d method=%s url=%s elapsed=%.3fs caller=%s error=%s",
-            request_id, method, url, elapsed, caller, str(e)
+            "[REQ_EXCEPTION] id=%d method=%s url=%s elapsed=%.3fs caller=%s thread=%s error=%s",
+            request_id, method, url, elapsed, caller, threading.current_thread().name, str(e)
         )
         raise
 

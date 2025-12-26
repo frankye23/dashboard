@@ -61,15 +61,48 @@ class DB(object):
         return self.conn
 
     def execute(self, *a, **kw):
+        import time
+        import threading
+        
         cursor = kw.pop('cursor', None)
+        start_time = time.time()
+        sql_preview = str(a[0])[:50] if a else 'unknown'  # 只记录前50字符
+        thread_id = threading.current_thread().name
+        
         try:
             cursor = cursor or self.get_conn().cursor()
             cursor.execute(*a, **kw)
-        except (AttributeError, MySQLdb.OperationalError):
+            
+            # 【止血修复】记录慢查询，用于后续根因诊断
+            elapsed = time.time() - start_time
+            if elapsed > 0.1:  # 100ms
+                logging.warning(
+                    "[DB_SLOW] thread=%s sql=%s elapsed=%.3fs",
+                    thread_id, sql_preview, elapsed
+                )
+            
+        except (AttributeError, MySQLdb.OperationalError) as e:
+            # 【止血修复】记录 DB 重连，这可能是并发访问的信号
+            elapsed = time.time() - start_time
+            logging.error(
+                "[DB_RECONNECT] thread=%s sql=%s elapsed=%.3fs error=%s",
+                thread_id, sql_preview, elapsed, str(e)
+            )
+            
             self.conn and self.conn.close()
             self.conn = None
             cursor = self.get_conn().cursor()
             cursor.execute(*a, **kw)
+            
+        except Exception as e:
+            # 【止血修复】记录所有 DB 异常，确保不丢失诊断信息
+            elapsed = time.time() - start_time
+            logging.error(
+                "[DB_ERROR] thread=%s sql=%s elapsed=%.3fs error=%s",
+                thread_id, sql_preview, elapsed, str(e)
+            )
+            raise
+            
         return cursor
 
     # insert one record in a transaction

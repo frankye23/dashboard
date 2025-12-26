@@ -61,13 +61,28 @@ def after_request(response):
     
     return response
 
-if not config.DEBUG:
-    @app.errorhandler(Exception)
-    def all_exception_handler(error):
+@app.errorhandler(Exception)
+def all_exception_handler(error):
+    # 【止血修复】确保异常路径也记录请求耗时，用于诊断
+    if hasattr(g, 'request_start_time'):
+        elapsed = time.time() - g.request_start_time
+        logging.error(
+            "[HTTP_EXCEPTION] request_id=%s method=%s path=%s elapsed=%.3fs error=%s",
+            getattr(g, 'request_id', 'unknown'), request.method, request.path, elapsed, str(error)
+        )
+    else:
+        logging.error(
+            "[HTTP_EXCEPTION] method=%s path=%s error=%s",
+            request.method, request.path, str(error)
+        )
+    
+    if not config.DEBUG:
         tb = traceback.format_exc()
         err_tip = gettext('Temporary error, please contact your administrator.')
         err_msg = err_tip + '\n\nError: %s\n\nTraceback:\n%s' %(error, tb)
         return '<pre>' + err_msg + '</pre>', 500
+    else:
+        raise
     
 @babel.localeselector
 def get_locale():
