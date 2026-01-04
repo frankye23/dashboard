@@ -15,6 +15,7 @@
 
 
 import MySQLdb
+import threading
 from rrd import config
 from rrd.utils.logger import logging
 
@@ -53,12 +54,20 @@ def connect_db(cfg):
 class DB(object):
     def __init__(self, cfg):
         self.config = cfg
-        self.conn = None
+        self._local = threading.local()
+
+    def _set_conn(self, conn):
+        self._local.conn = conn
+
+    def _get_conn(self):
+        return getattr(self._local, "conn", None)
 
     def get_conn(self):
-        if self.conn is None:
-            self.conn = connect_db(self.config)
-        return self.conn
+        conn = self._get_conn()
+        if conn is None:
+            conn = connect_db(self.config)
+            self._set_conn(conn)
+        return conn
 
     def execute(self, *a, **kw):
         import time
@@ -81,7 +90,7 @@ class DB(object):
                     thread_id, sql_preview, elapsed
                 )
             
-        except (AttributeError, MySQLdb.OperationalError) as e:
+        except (AttributeError, MySQLdb.OperationalError, MySQLdb.InterfaceError, MySQLdb.InternalError) as e:
             # 【止血修复】记录 DB 重连，这可能是并发访问的信号
             elapsed = time.time() - start_time
             logging.error(
@@ -89,8 +98,9 @@ class DB(object):
                 thread_id, sql_preview, elapsed, str(e)
             )
             
-            self.conn and self.conn.close()
-            self.conn = None
+            conn = self._get_conn()
+            conn and conn.close()
+            self._set_conn(None)
             cursor = self.get_conn().cursor()
             cursor.execute(*a, **kw)
         
@@ -147,18 +157,28 @@ class DB(object):
             return []
 
     def commit(self):
-        if self.conn:
+        conn = self._get_conn()
+        if conn:
             try:
-                self.conn.commit()
-            except MySQLdb.OperationalError:
-                self.conn = None
+                conn.commit()
+            except (MySQLdb.OperationalError, MySQLdb.InterfaceError, MySQLdb.InternalError):
+                self._set_conn(None)
 
     def rollback(self):
-        if self.conn:
+        conn = self._get_conn()
+        if conn:
             try:
-                self.conn.rollback()
-            except MySQLdb.OperationalError:
-                self.conn = None
+                conn.rollback()
+            except (MySQLdb.OperationalError, MySQLdb.InterfaceError, MySQLdb.InternalError):
+                self._set_conn(None)
+
+    def close(self):
+        conn = self._get_conn()
+        if conn:
+            try:
+                conn.close()
+            finally:
+                self._set_conn(None)
 
 
 db = DB(portal_db_cfg)

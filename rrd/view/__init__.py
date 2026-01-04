@@ -51,6 +51,8 @@ def app_teardown(exception):
     from rrd.store import db, alarm_db
     db.commit()
     alarm_db.commit()
+    db.close()
+    alarm_db.close()
 
 @app.before_request
 def app_before():
